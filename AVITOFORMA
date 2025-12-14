@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GTA ONLINE BOOST — Калькулятор заказа</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Rajdhani', 'sans-serif'],
+          },
+          colors: {
+            gta: {
+              green: '#2ecc71',
+              dark: '#0f172a',
+              card: '#1e293b',
+            },
+            ps: {
+              blue: '#00439C',
+              light: '#2d74da'
+            }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.4s ease-out forwards',
+            'slide-up': 'slideUp 0.4s ease-out forwards',
+          },
+          keyframes: {
+            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+            slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+          }
+        }
+      }
+    };
+  </script>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body { background-color: #0f172a; color: #f8fafc; overflow-x: hidden; transition: background-color 0.5s ease; }
+    .glass { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); transition: border-color 0.3s ease; }
+    .glass-strong { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(16px); border-top: 1px solid rgba(255, 255, 255, 0.1); }
+    .bg-mesh { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; background: radial-gradient(at 0% 0%, hsla(153,47%,20%,0.4) 0, transparent 50%), radial-gradient(at 100% 100%, hsla(260,50%,15%,0.4) 0, transparent 50%); transition: background 1s ease; }
+    
+    /* Dynamic Theme Classes */
+    .theme-pc .accent-text { color: #2ecc71; }
+    .theme-pc .accent-bg { background-color: #2ecc71; }
+    .theme-pc .accent-border { border-color: #2ecc71; }
+    .theme-pc .accent-check:checked + div { border-color: #2ecc71; background-color: rgba(46, 204, 113, 0.1); }
+    .theme-pc .bg-mesh { background: radial-gradient(at 0% 0%, hsla(153,47%,20%,0.4) 0, transparent 50%), radial-gradient(at 100% 100%, hsla(260,50%,15%,0.4) 0, transparent 50%); }
+
+    .theme-ps .accent-text { color: #2d74da; }
+    .theme-ps .accent-bg { background-color: #00439C; }
+    .theme-ps .accent-border { border-color: #2d74da; }
+    .theme-ps .accent-check:checked + div { border-color: #2d74da; background-color: rgba(45, 116, 218, 0.15); }
+    .theme-ps .bg-mesh { background: radial-gradient(at 0% 0%, hsla(210, 80%, 20%, 0.4) 0, transparent 50%), radial-gradient(at 100% 100%, hsla(230, 60%, 15%, 0.4) 0, transparent 50%); }
+    
+    .custom-checkbox:checked + div svg { display: block; }
+  </style>
+</head>
+<body>
+  <div class="bg-mesh"></div>
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="env,react">
+    /* ================= КОНФИГУРАЦИЯ ================= */
+    const TRELLO_KEY = "17bbfe1a2af1308027cbf9ee6d32c892"; 
+    const TRELLO_TOKEN = "ATTA4023879d0e1c940be777dacba0177563275e0bbbdc9b5361ecdaf4c027f9739834999E6D"; 
+    const TRELLO_LIST_ID = "685fbecf9de5902f7c319e31"; 
+    const TG_BOT_TOKEN = "6035113933:AAHJ7HebPU89cXqAGdBThDk6MglwMpZD3hw";
+    const TG_CHAT_ID = "1039921677";
+
+    /* ================= ДАННЫЕ PC (ПРАЙС-ЛИСТ) ================= */
+    const PLATFORMS = [
+      { id: "Steam", label: "Steam", icon: "Gamepad2", type: "pc" },
+      { id: "Epic", label: "Epic Games", icon: "Zap", type: "pc" },
+      { id: "Rockstar", label: "Rockstar Launcher", icon: "Star", type: "pc" },
+      { id: "PS", label: "PlayStation 4/5", icon: "Gamepad", type: "ps" }, // CHANGED
+    ];
+
+    const PC_MONEY_PACKS = [
+      { val: 25, label: "25 млн", price: 150 },
+      { val: 30, label: "30 млн", price: 200},
+      { val: 40, label: "40 млн", price: 300 },
+      { val: 50, label: "50 млн", price: 350 },
+      { val: 75, label: "75 млн", price: 500 },
+      { val: 100, label: "100 млн", price: 600 },
+      { val: 125, label: "125 млн", price: 750 },
+      { val: 150, label: "150 млн", price: 950 },
+      { val: 200, label: "200 млн", price: 1400 },
+      { val: 250, label: "250 млн", price: 1550 },
+      { val: 500, label: "500 млн", price: 1750 },
+      { val: 750, label: "750 млн", price: 1850 },
+      { val: 1000, label: "1 млрд", price: 1950 },
+      { val: 1500, label: "1.5 млрд", price: 2100 },
+      { val: 2000, label: "2 млрд", price: 2300 },
+      { val: 4000, label: "4 млрд", price: 2500 },
+    ];
+
+    const PC_LEVELS_MAIN = [
+      { id: "lvl_50", label: "50 LVL", price: 25 },
+      { id: "lvl_100", label: "100 LVL", price: 50 },
+      { id: "lvl_120", label: "120 LVL", price: 75 },
+      { id: "lvl_777", label: "777 LVL", price: 100 },
+      { id: "lvl_8000", label: "8000 LVL", price: 150 },
+    ];
+
+    const PC_LEVELS_EXTRA = [
+      { id: "rep_car", label: "Автоклуб 1000 LVL", price: 100 },
+      { id: "rep_arena", label: "Арена 1000 LVL", price: 100 },
+      { id: "rep_crew", label: "Банда 1000 LVL", price: 100 },
+    ];
+
+    const PC_UNLOCKS = [
+      { id: "unl_all_30", label: "Открыть всё (Выгода 30%)", price: 250, highlight: true },
+      { id: "unl_skills", label: "Навыки персонажа", price: 50 },
+      { id: "unl_run", label: "Быстрый бег и перезарядка", price: 50 },
+      { id: "unl_lsc", label: "Тюнинг (LSC)", price: 50 },
+      { id: "unl_gun", label: "Оружие", price: 50 },
+      { id: "unl_tattoo", label: "Татуировки", price: 50 },
+      { id: "unl_cloth", label: "Одежда", price: 50 },
+      { id: "unl_hair", label: "Прически", price: 50 },
+    ];
+
+    const PC_VEHICLES = [
+      { id: "veh_kosatka", label: "Kosatka (Подлодка)", price: 100 },
+      { id: "veh_shotaro", label: "Shotaro (Мотоцикл)", price: 100 },
+      { id: "veh_blista", label: "Go Go Monkey Blista", price: 100 },
+      { id: "veh_removed", label: "Удаленное авто (название в чат)", price: 100 },
+    ];
+
+    const PC_SPECIAL = [
+      { id: "spec_all_50", label: "Открыть всё (Выгода 50%)", price: 1450, highlight: true, icon: "Crown" },
+      { id: "spec_achiev", label: "Все достижения", price: 150 },
+      { id: "spec_bunker_res", label: "Разработки бункера", price: 150 },
+      { id: "spec_bunker_rng", label: "Награды тира бункера", price: 150 },
+      { id: "spec_gender", label: "Изменить пол персонажа", price: 150 },
+      { id: "spec_career", label: "Пройти карьеру", price: 150 },
+      { id: "spec_skip_tut", label: "Пропуск обучения", price: 150 },
+      { id: "spec_skip_cut", label: "Пропуск катсцен", price: 150 },
+      { id: "spec_clear_rep", label: "Очистить репорты", price: 150 },
+      { id: "spec_clear_psy", label: "Очистить психику", price: 150 },
+      { id: "spec_nightclub", label: "Популярность клуба", price: 150 },
+      { id: "spec_susp", label: "Сбросить подозрительность", price: 150 },
+      { id: "spec_dunce", label: "Снять колпак «Dunce»", price: 150 },
+    ];
+
+    const PC_EXTRAS = [
+      { id: "ex_priority", label: "⏰ Приоритетный заказ", price: 200 },
+      { id: "ex_consult", label: "🧐 Консультация", price: 100 },
+      { id: "ex_tip", label: "😎 Чаевые накрутчику", price: 100 },
+    ];
+
+    /* ================= ДАННЫЕ PLAYSTATION ================= */
+    const PS_MONEY_CARS = [
+      { id: 'ps_m_none', label: "Возьму наличкой / Не нужно", price: 0 },
+      { id: 'ps_m_15', label: "15 млн (Машинами)", price: 765 },
+      { id: 'ps_m_20', label: "20 млн (Машинами)", price: 935 },
+      { id: 'ps_m_25', label: "25 млн (Машинами)", price: 1020 },
+      { id: 'ps_m_30', label: "30 млн (Машинами)", price: 1105 },
+      { id: 'ps_m_40', label: "40 млн (Машинами)", price: 1190 },
+      { id: 'ps_m_50', label: "50 млн (Машинами)", price: 1360 },
+      { id: 'ps_m_75', label: "75 млн (Машинами)", price: 1700 },
+      { id: 'ps_m_100', label: "100 млн (Машинами)", price: 2040 },
+      { id: 'ps_m_150', label: "150 млн (Машинами)", price: 2380 },
+      { id: 'ps_m_200', label: "200 млн (Машинами)", price: 3060 },
+      { id: 'ps_m_300', label: "300 млн (Машинами)", price: 4080 },
+      { id: 'ps_m_400', label: "400 млн (Машинами)", price: 4590 },
+      { id: 'ps_m_500', label: "500 млн (Машинами)", price: 5100 },
+      { id: 'ps_m_750', label: "750 млн (Машинами)", price: 6800 },
+    ];
+
+    const PS_MONEY_CASH = [
+      { id: 'ps_c_none', label: "Не нужна наличка", price: 0 },
+      { id: 'ps_c_30', label: "30 млн (Наличкой)", price: 1190 },
+      { id: 'ps_c_40', label: "40 млн (Наличкой)", price: 1360 },
+    ];
+
+    const PS_LEVELS = [
+      { id: 'ps_l_none', label: "Уровень не нужен", price: 0 },
+      { id: 'ps_l_100', label: "LVL 100", price: 2500 },
+      { id: 'ps_l_120', label: "LVL 120", price: 3000 },
+      { id: 'ps_l_135', label: "LVL 135", price: 3500 },
+      { id: 'ps_l_150', label: "LVL 150", price: 4500 },
+    ];
+
+    const REQUISITES = [
+      { label: "СБП (Любой банк)", num: "+7-914-172-85-17", icon: "Smartphone" },
+      { label: "Банковская карта Сбер", num: "2202 2032 9079 4421", icon: "CreditCard" },
+      { label: "Банковская карта Тбанк", num: "2200 7001 1816 8359", icon: "CreditCard" },
+    ];
+
+    /* ================= UI Components ================= */
+    const Icon = ({ name, className }) => {
+      React.useEffect(() => lucide.createIcons(), [name]);
+      return <i data-lucide={name} className={className}></i>;
+    };
+
+    const PriceTag = ({ price }) => (
+      <span className={`font-display font-bold ${price > 0 ? 'accent-text' : 'text-slate-500'}`}>
+        {price > 0 ? `+${price}₽` : '0₽'}
+      </span>
+    );
+
+    /* ================= MAIN APP ================= */
+    function App() {
+      // --- STATE GENERAL ---
+      const [platform, setPlatform] = React.useState(PLATFORMS[0].id);
+      const isPlayStation = platform === "PS";
+
+      // --- STATE PC ---
+      const [moneyIdx, setMoneyIdx] = React.useState(0);
+      const [useMoney, setUseMoney] = React.useState(true);
+      const [levelId, setLevelId] = React.useState(null);
+      const [selectedExtras, setSelectedExtras] = React.useState(new Set());
+
+      // --- STATE PLAYSTATION ---
+      const [psConsole, setPsConsole] = React.useState("PS4"); // PS4 or PS5
+      const [psCarMoney, setPsCarMoney] = React.useState(PS_MONEY_CARS[0]);
+      const [psCashMoney, setPsCashMoney] = React.useState(PS_MONEY_CASH[0]);
+      const [psLevel, setPsLevel] = React.useState(PS_LEVELS[0]);
+      const [psReq200k, setPsReq200k] = React.useState(false); // Если нет 200к
+      const [psReqPlus, setPsReqPlus] = React.useState(false); // Если нет PS+
+
+      // --- MODAL ---
+      const [login, setLogin] = React.useState("");
+      const [password, setPassword] = React.useState("");
+      const [contacts, setContacts] = React.useState("");
+      const [isModalOpen, setIsModalOpen] = React.useState(false);
+      const [isSubmitting, setIsSubmitting] = React.useState(false);
+      const [orderSuccess, setOrderSuccess] = React.useState(null);
+
+      // --- LOGIC ---
+      const toggleExtra = (id) => {
+        const newSet = new Set(selectedExtras);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setSelectedExtras(newSet);
+      };
+
+      const calculateTotal = () => {
+        let total = 0;
+        
+        if (isPlayStation) {
+          total += psCarMoney.price;
+          total += psCashMoney.price;
+          total += psLevel.price;
+          if (psReq200k) total += 500;
+          if (psReqPlus) total += 500;
+        } else {
+          // PC Calculation
+          if (useMoney && PC_MONEY_PACKS[moneyIdx]) {
+            total += PC_MONEY_PACKS[moneyIdx].price;
+          }
+          if (levelId) {
+            const lvl = PC_LEVELS_MAIN.find(l => l.id === levelId);
+            if (lvl) total += lvl.price;
+          }
+          const allCheckboxes = [...PC_LEVELS_EXTRA, ...PC_UNLOCKS, ...PC_VEHICLES, ...PC_SPECIAL, ...PC_EXTRAS];
+          selectedExtras.forEach(id => {
+            const item = allCheckboxes.find(i => i.id === id);
+            if (item) total += item.price;
+          });
+        }
+        return total;
+      };
+
+      const totalPrice = calculateTotal();
+
+      // --- SUBMIT ---
+      const handlePayment = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        
+        try {
+          let itemsText = [];
+          
+          if (isPlayStation) {
+             itemsText.push(`🎮 Консоль: ${psConsole}`);
+             if (psCarMoney.price > 0 || psCarMoney.id !== 'ps_m_none') itemsText.push(`🚗 Деньги (Авто): ${psCarMoney.label}`);
+             if (psCashMoney.price > 0 || psCashMoney.id !== 'ps_c_none') itemsText.push(`💵 Деньги (Нал): ${psCashMoney.label}`);
+             if (psLevel.price > 0) itemsText.push(`⭐ Уровень: ${psLevel.label}`);
+             if (psReq200k) itemsText.push(`⚠ Нет 200к на счету (+500₽)`);
+             if (psReqPlus) itemsText.push(`⚠ Нет подписки PS+ (+500₽)`);
+          } else {
+             if (useMoney) itemsText.push(`💰 Валюта: ${PC_MONEY_PACKS[moneyIdx].label}`);
+             else itemsText.push(`💰 Валюта: Не нужна`);
+             
+             if (levelId) {
+                const l = PC_LEVELS_MAIN.find(x => x.id === levelId);
+                itemsText.push(`⭐ Уровень: ${l.label}`);
+             }
+             const allCheckboxes = [...PC_LEVELS_EXTRA, ...PC_UNLOCKS, ...PC_VEHICLES, ...PC_SPECIAL, ...PC_EXTRAS];
+             const chosenExtras = allCheckboxes.filter(i => selectedExtras.has(i.id)).map(i => `✅ ${i.label}`);
+             itemsText.push(...chosenExtras);
+          }
+          
+          const desc = `
+🧾 **НОВЫЙ ЗАКАЗ**
+💵 **Сумма:** ${totalPrice} RUB
+👤 **Контакты:** ${contacts}
+🎮 **Платформа:** ${isPlayStation ? `PlayStation (${psConsole})` : PLATFORMS.find(p=>p.id===platform).label}
+🔐 **Вход:** ${login}:${password}
+
+**Состав заказа:**
+${itemsText.join('\n')}
+          `;
+
+          // Trello
+          const card = await fetch(`https://api.trello.com/1/cards?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}&idList=${TRELLO_LIST_ID}&name=Заказ ${totalPrice}₽ (${contacts})&desc=${encodeURIComponent(desc)}`, { method: "POST" }).then(r => r.json());
+
+          // Telegram
+          await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: TG_CHAT_ID,
+              parse_mode: "HTML",
+              text: `<b>💰 Оплачен заказ #${card.idShort}</b>\nСумма: <b>${totalPrice} RUB</b>\nКонтакты: ${contacts}\nПлатформа: ${isPlayStation ? psConsole : platform}`
+            })
+          });
+
+          setOrderSuccess(card.idShort);
+          window.confetti({ particleCount: 200, spread: 70, origin: { y: 0.6 } });
+
+        } catch (err) {
+          alert("Ошибка соединения. Попробуйте позже.");
+          console.error(err);
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      if (orderSuccess) {
+         return (
+          <div className={`min-h-screen flex items-center justify-center p-4 ${isPlayStation ? 'theme-ps' : 'theme-pc'}`}>
+            <div className="glass max-w-md w-full p-8 rounded-3xl text-center border-t-4 accent-border animate-fade-in">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 accent-bg text-white shadow-lg">
+                <Icon name="check-circle" className="w-10 h-10" />
+              </div>
+              <h2 className="text-3xl font-display font-bold text-white mb-2">Оплата прошла!</h2>
+              <p className="text-slate-300 mb-6">Заказ <span className="accent-text font-bold">#{orderSuccess}</span> принят в работу.</p>
+              <button onClick={() => window.location.reload()} className="w-full bg-slate-700 py-3 rounded-xl hover:bg-slate-600 transition">Новый заказ</button>
+            </div>
+          </div>
+         )
+      }
+
+      return (
+        <div className={`pb-32 ${isPlayStation ? 'theme-ps' : 'theme-pc'}`}>
+          {/* HEADER */}
+          <header className="py-10 text-center px-4">
+             <h1 className="text-5xl md:text-6xl font-display font-black text-white mb-2 tracking-tight">
+               GTA ONLINE <span className="accent-text">BOOST</span>
+             </h1>
+             <p className="text-slate-400">Собери свой пак. Моментальный расчет цены.</p>
+          </header>
+
+          <main className="max-w-5xl mx-auto px-4 grid gap-8">
+            
+            {/* 1. PLATFORM */}
+            <section className="glass p-6 rounded-2xl animate-slide-up">
+              <h2 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                <Icon name="monitor" className="accent-text" /> 1. Платформа
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {PLATFORMS.map(p => (
+                  <label key={p.id} className="cursor-pointer">
+                    <input type="radio" name="plat" className="sr-only accent-check" checked={platform === p.id} onChange={() => setPlatform(p.id)} />
+                    <div className={`border bg-slate-800/50 p-4 rounded-xl flex flex-col items-center gap-2 transition duration-300 ${platform === p.id ? 'accent-border accent-text' : 'border-slate-700 text-slate-400 hover:bg-slate-700'}`}>
+                      <Icon name={p.icon} />
+                      <span className="text-sm font-bold text-center">{p.label}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            {/* CONDITIONAL CONTENT */}
+            {isPlayStation ? (
+              // ============ PLAYSTATION CONTENT ============
+              <>
+                 {/* PS VERSION */}
+                 <section className="glass p-6 rounded-2xl animate-slide-up" style={{animationDelay: '0.1s'}}>
+                    <h2 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                      <Icon name="gamepad-2" className="accent-text" /> 2. Версия консоли
+                    </h2>
+                    <div className="flex gap-4">
+                      {["PS4", "PS5"].map(ver => (
+                        <label key={ver} className="cursor-pointer flex-1">
+                           <input type="radio" name="psver" className="sr-only accent-check" checked={psConsole === ver} onChange={() => setPsConsole(ver)} />
+                           <div className={`border p-4 rounded-xl text-center font-bold transition ${psConsole === ver ? 'accent-border bg-slate-700 text-white' : 'border-slate-700 bg-slate-800/50 text-slate-400'}`}>
+                              {ver}
+                           </div>
+                        </label>
+                      ))}
+                    </div>
+                 </section>
+
+                 {/* PS MONEY (CARS) */}
+                 <section className="glass p-6 rounded-2xl animate-slide-up" style={{animationDelay: '0.2s'}}>
+                    <h2 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                      <Icon name="car" className="accent-text" /> 3. Деньги машинами (Deluxo)
+                    </h2>
+                    <p className="text-sm text-slate-400 mb-3">Самый безопасный способ. Мы забиваем гаражи дорогими авто, вы их продаете.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                       {PS_MONEY_CARS.map((m) => (
+                         <button 
+                           key={m.id}
+                           onClick={() => setPsCarMoney(m)}
+                           className={`p-3 rounded-xl border text-left flex justify-between items-center transition ${psCarMoney.id === m.id ? 'accent-bg text-white border-transparent' : 'bg-slate-800/40 border-slate-700 text-slate-300 hover:border-slate-500'}`}
+                         >
+                           <span className="font-bold text-sm">{m.label}</span>
+                           <span className="text-xs opacity-80">{m.price === 0 ? "0₽" : `+${m.price}₽`}</span>
+                         </button>
+                       ))}
+                    </div>
+                 </section>
+
+                 {/* PS MONEY (CASH) & LEVELS */}
+                 <div className="grid md:grid-cols-2 gap-8 animate-slide-up" style={{animationDelay: '0.3s'}}>
+                    <section className="glass p-6 rounded-2xl">
+                      <h2 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                        <Icon name="banknote" className="accent-text" /> 4. Наличка
+                      </h2>
+                      <div className="space-y-2">
+                         {PS_MONEY_CASH.map((m) => (
+                           <button 
+                             key={m.id}
+                             onClick={() => setPsCashMoney(m)}
+                             className={`w-full p-3 rounded-xl border text-left flex justify-between items-center transition ${psCashMoney.id === m.id ? 'accent-bg text-white border-transparent' : 'bg-slate-800/40 border-slate-700 text-slate-300 hover:border-slate-500'}`}
+                           >
+                             <span className="font-bold text-sm">{m.label}</span>
+                             <span className="text-xs opacity-80">{m.price === 0 ? "0₽" : `+${m.price}₽`}</span>
+                           </button>
+                         ))}
+                      </div>
+                    </section>
+
+                    <section className="glass p-6 rounded-2xl">
+                      <h2 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                        <Icon name="star" className="accent-text" /> 5. Уровень
+                      </h2>
+                      <div className="space-y-2">
+                         {PS_LEVELS.map((l) => (
+                           <button 
+                             key={l.id}
+                             onClick={() => setPsLevel(l)}
+                             className={`w-full p-3 rounded-xl border text-left flex justify-between items-center transition ${psLevel.id === l.id ? 'accent-bg text-white border-transparent' : 'bg-slate-800/40 border-slate-700 text-slate-300 hover:border-slate-500'}`}
+                           >
+                             <span className="font-bold text-sm">{l.label}</span>
+                             <span className="text-xs opacity-80">{l.price === 0 ? "0₽" : `+${l.price}₽`}</span>
+                           </button>
+                         ))}
+                      </div>
+                    </section>
+                 </div>
+
+                 {/* PS REQUIREMENTS */}
+                 <section className="glass p-6 rounded-2xl animate-slide-up" style={{animationDelay: '0.4s'}}>
+                    <h2 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                      <Icon name="alert-triangle" className="text-yellow-500" /> Требования для прокачки
+                    </h2>
+                    <div className="grid md:grid-cols-2 gap-4">
+                       <label className="flex items-center gap-3 p-4 rounded-xl border border-slate-700 bg-slate-800/30 cursor-pointer hover:bg-slate-800/60 transition">
+                         <input type="checkbox" className="custom-checkbox sr-only" checked={psReq200k} onChange={(e) => setPsReq200k(e.target.checked)} />
+                         <div className="w-5 h-5 rounded border border-slate-500 flex items-center justify-center bg-slate-900"><Icon name="check" className="w-3 h-3 text-black hidden" /></div>
+                         <div className="flex-1 flex justify-between items-center text-sm">
+                            <span>У меня нет 200.000$ на балансе</span>
+                            <PriceTag price={500} />
+                         </div>
+                       </label>
+                       
+                       <label className="flex items-center gap-3 p-4 rounded-xl border border-slate-700 bg-slate-800/30 cursor-pointer hover:bg-slate-800/60 transition">
+                         <input type="checkbox" className="custom-checkbox sr-only" checked={psReqPlus} onChange={(e) => setPsReqPlus(e.target.checked)} />
+                         <div className="w-5 h-5 rounded border border-slate-500 flex items-center justify-center bg-slate-900"><Icon name="check" className="w-3 h-3 text-black hidden" /></div>
+                         <div className="flex-1 flex justify-between items-center text-sm">
+                            <span>У меня нет подписки PS+</span>
+                            <PriceTag price={500} />
+                         </div>
+                       </label>
+                    </div>
+                 </section>
+              </>
+            ) : (
+              // ============ PC CONTENT (OLD LOGIC) ============
+              <>
+                 {/* 2. MONEY */}
+                <section className="glass p-6 rounded-2xl animate-slide-up" style={{animationDelay: '0.1s'}}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-display font-bold text-white flex items-center gap-2">
+                      <Icon name="banknote" className="accent-text" /> 2. Валюта
+                    </h2>
+                    <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
+                      <input type="checkbox" className="accent-check" checked={!useMoney} onChange={(e) => setUseMoney(!e.target.checked)} />
+                      Мне не нужна валюта
+                    </label>
+                  </div>
+
+                  <div className={`transition-all duration-300 ${!useMoney ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                        {PC_MONEY_PACKS.map((pk, idx) => (
+                          <button 
+                            key={idx}
+                            onClick={() => setMoneyIdx(idx)}
+                            className={`p-2 rounded-lg border text-sm flex flex-col items-center justify-center gap-1 transition-all ${moneyIdx === idx ? 'accent-bg text-black border-transparent shadow-lg transform scale-105' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:border-slate-500'}`}
+                          >
+                            <span className="font-bold">{pk.label}</span>
+                            <span className="text-[10px] opacity-80">{pk.price === 0 ? "Бесплатно" : `+${pk.price}₽`}</span>
+                          </button>
+                        ))}
+                      </div>
+                  </div>
+                </section>
+
+                {/* 3. LEVELS */}
+                <section className="glass p-6 rounded-2xl animate-slide-up" style={{animationDelay: '0.2s'}}>
+                  <h2 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                    <Icon name="star" className="accent-text" /> 3. Уровень и Репутация
+                  </h2>
+                  
+                  <div className="mb-4">
+                      <p className="text-sm text-slate-400 mb-2">Уровень персонажа (Один на выбор):</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => setLevelId(null)} className={`px-4 py-2 rounded-lg border text-sm font-bold ${levelId === null ? 'bg-slate-600 border-slate-500 text-white' : 'border-slate-700 bg-slate-800/30 text-slate-400'}`}>Не менять</button>
+                        {PC_LEVELS_MAIN.map(l => (
+                          <button 
+                            key={l.id} 
+                            onClick={() => setLevelId(l.id)}
+                            className={`px-4 py-2 rounded-lg border text-sm font-bold transition ${levelId === l.id ? 'accent-bg text-black border-transparent' : 'border-slate-700 bg-slate-800/30 hover:border-slate-500'}`}
+                          >
+                            {l.label} <span className="opacity-70 font-normal">+{l.price}₽</span>
+                          </button>
+                        ))}
+                      </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    {PC_LEVELS_EXTRA.map(item => (
+                      <label key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-700 bg-slate-800/30 cursor-pointer hover:bg-slate-800/60 transition group">
+                        <input type="checkbox" className="custom-checkbox sr-only accent-check" checked={selectedExtras.has(item.id)} onChange={() => toggleExtra(item.id)} />
+                        <div className="w-5 h-5 rounded border border-slate-500 flex items-center justify-center group-hover:border-white transition">
+                          <Icon name="check" className="w-3 h-3 text-black hidden" />
+                        </div>
+                        <div className="flex-1 flex justify-between items-center text-sm">
+                           <span>{item.label}</span>
+                           <PriceTag price={item.price} />
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </section>
+
+                {/* 4. UNLOCKS & VEHICLES */}
+                <div className="grid md:grid-cols-2 gap-8 animate-slide-up" style={{animationDelay: '0.3s'}}>
+                  <section className="glass p-6 rounded-2xl">
+                    <h2 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                      <Icon name="unlock" className="accent-text" /> 🔰 Разблокировки
+                    </h2>
+                    <div className="space-y-2">
+                      {PC_UNLOCKS.map(item => (
+                        <label key={item.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition ${item.highlight ? 'accent-border bg-white/5' : 'border-slate-700 bg-slate-800/30'}`}>
+                          <input type="checkbox" className="custom-checkbox sr-only accent-check" checked={selectedExtras.has(item.id)} onChange={() => toggleExtra(item.id)} />
+                          <div className="w-5 h-5 rounded border border-slate-500 flex items-center justify-center bg-slate-900"><Icon name="check" className="w-3 h-3 text-black hidden" /></div>
+                          <div className="flex-1 flex justify-between items-center text-sm">
+                              <span className={item.highlight ? 'accent-text font-bold' : 'text-slate-200'}>{item.label}</span>
+                              <PriceTag price={item.price} />
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="glass p-6 rounded-2xl">
+                    <h2 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                      <Icon name="car" className="accent-text" /> 🚘 Транспорт
+                    </h2>
+                    <div className="space-y-2">
+                      {PC_VEHICLES.map(item => (
+                        <label key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-700 bg-slate-800/30 cursor-pointer hover:bg-slate-800/60 transition">
+                          <input type="checkbox" className="custom-checkbox sr-only accent-check" checked={selectedExtras.has(item.id)} onChange={() => toggleExtra(item.id)} />
+                          <div className="w-5 h-5 rounded border border-slate-500 flex items-center justify-center bg-slate-900"><Icon name="check" className="w-3 h-3 text-black hidden" /></div>
+                          <div className="flex-1 flex justify-between items-center text-sm">
+                              <span>{item.label}</span>
+                              <PriceTag price={item.price} />
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                    
+                    <h2 className="text-xl font-display font-bold text-white mt-8 mb-4 flex items-center gap-2">
+                      <Icon name="target" className="accent-text" /> 🎯 Дополнительно
+                    </h2>
+                     <div className="space-y-2">
+                      {PC_EXTRAS.map(item => (
+                        <label key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-700 bg-slate-800/30 cursor-pointer hover:bg-slate-800/60 transition">
+                          <input type="checkbox" className="custom-checkbox sr-only accent-check" checked={selectedExtras.has(item.id)} onChange={() => toggleExtra(item.id)} />
+                          <div className="w-5 h-5 rounded border border-slate-500 flex items-center justify-center bg-slate-900"><Icon name="check" className="w-3 h-3 text-black hidden" /></div>
+                          <div className="flex-1 flex justify-between items-center text-sm">
+                              <span>{item.label}</span>
+                              <PriceTag price={item.price} />
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+
+                {/* 5. SPECIAL UNLOCKS */}
+                <section className="glass p-6 rounded-2xl animate-slide-up" style={{animationDelay: '0.4s'}}>
+                  <h2 className="text-xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                    <Icon name="crown" className="text-yellow-400" /> 👑 Особые услуги
+                  </h2>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                     {PC_SPECIAL.map(item => (
+                        <label key={item.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition ${item.highlight ? 'border-yellow-500/50 bg-yellow-500/5' : 'border-slate-700 bg-slate-800/30'}`}>
+                          <input type="checkbox" className="custom-checkbox sr-only accent-check" checked={selectedExtras.has(item.id)} onChange={() => toggleExtra(item.id)} />
+                          <div className="w-5 h-5 rounded border border-slate-500 flex items-center justify-center bg-slate-900"><Icon name="check" className="w-3 h-3 text-black hidden" /></div>
+                          <div className="flex-1 flex justify-between items-center text-sm">
+                              <span className={item.highlight ? 'text-yellow-400 font-bold' : 'text-slate-200'}>{item.label}</span>
+                              <PriceTag price={item.price} />
+                          </div>
+                        </label>
+                      ))}
+                  </div>
+                </section>
+              </>
+            )}
+
+          </main>
+
+          {/* STICKY FOOTER */}
+          <div className="fixed bottom-0 left-0 w-full glass-strong p-4 z-40">
+            <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+              <div>
+                <div className="text-xs text-slate-400 uppercase tracking-wider">Итоговая цена</div>
+                <div className="text-3xl font-display font-bold accent-text">{totalPrice} RUB</div>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="accent-bg hover:brightness-110 text-white font-bold py-3 px-8 rounded-xl text-lg shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:scale-105 transition-transform"
+              >
+                Оформить заказ
+              </button>
+            </div>
+          </div>
+
+          {/* PAYMENT MODAL */}
+          {isModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
+              <div className="relative bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                
+                {/* Header */}
+                <div className="p-6 border-b border-slate-800 bg-slate-900 z-10">
+                  <h3 className="text-2xl font-display font-bold text-white">Оформление заказа</h3>
+                  <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><Icon name="x" className="w-6 h-6" /></button>
+                </div>
+
+                {/* Scrollable Content */}
+                <div className="overflow-y-auto p-6 space-y-6">
+                  
+                  {/* Cart Summary */}
+                  <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-sm">
+                    <h4 className="font-bold text-slate-400 mb-2 uppercase text-xs">Ваша корзина:</h4>
+                    <ul className="space-y-1 text-slate-200">
+                      {isPlayStation ? (
+                        <>
+                           <li className="flex justify-between font-bold text-white"><span>Платформа: PlayStation ({psConsole})</span></li>
+                           {psCarMoney.id !== 'ps_m_none' && <li className="flex justify-between"><span>{psCarMoney.label}</span> <span>{psCarMoney.price}₽</span></li>}
+                           {psCashMoney.id !== 'ps_c_none' && <li className="flex justify-between"><span>{psCashMoney.label}</span> <span>{psCashMoney.price}₽</span></li>}
+                           {psLevel.id !== 'ps_l_none' && <li className="flex justify-between"><span>{psLevel.label}</span> <span>{psLevel.price}₽</span></li>}
+                           {psReq200k && <li className="flex justify-between text-yellow-400"><span>Нет 200к (Комиссия)</span> <span>500₽</span></li>}
+                           {psReqPlus && <li className="flex justify-between text-yellow-400"><span>Нет PS+ (Комиссия)</span> <span>500₽</span></li>}
+                        </>
+                      ) : (
+                        <>
+                          <li className="flex justify-between font-bold text-white"><span>Платформа: {PLATFORMS.find(p=>p.id===platform).label}</span></li>
+                          {useMoney && <li className="flex justify-between"><span>Валюта: {PC_MONEY_PACKS[moneyIdx].label}</span> <span>{PC_MONEY_PACKS[moneyIdx].price}₽</span></li>}
+                          {levelId && <li className="flex justify-between"><span>Уровень: {PC_LEVELS_MAIN.find(l=>l.id===levelId).label}</span> <span>{PC_LEVELS_MAIN.find(l=>l.id===levelId).price}₽</span></li>}
+                          {[...PC_LEVELS_EXTRA, ...PC_UNLOCKS, ...PC_VEHICLES, ...PC_SPECIAL, ...PC_EXTRAS].filter(i => selectedExtras.has(i.id)).map(i => (
+                            <li key={i.id} className="flex justify-between"><span>{i.label}</span> <span>{i.price}₽</span></li>
+                          ))}
+                        </>
+                      )}
+                    </ul>
+                    <div className="mt-3 pt-3 border-t border-slate-700 flex justify-between font-bold text-lg text-white">
+                      <span>Итого:</span>
+                      <span className="accent-text">{totalPrice} RUB</span>
+                    </div>
+                  </div>
+
+                  {/* Payment Methods */}
+                  <div>
+                    <h4 className="font-bold text-white mb-3">Выберите способ оплаты</h4>
+                    <div className="space-y-2">
+                       {REQUISITES.map((req, i) => (
+                         <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-600 bg-slate-800">
+                           <div className="flex items-center gap-3">
+                             <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center accent-text">
+                               <Icon name={req.icon} className="w-5 h-5" />
+                             </div>
+                             <div>
+                               <div className="font-bold">{req.label}</div>
+                               <div className="text-xs text-slate-400">Комиссия 0%</div>
+                             </div>
+                           </div>
+                           <button onClick={() => navigator.clipboard.writeText(req.num.replace(/\s/g, ''))} className="text-xs bg-slate-700 hover:bg-white hover:text-black px-2 py-1 rounded transition">
+                             {req.num} <Icon name="copy" className="w-3 h-3 inline ml-1" />
+                           </button>
+                         </div>
+                       ))}
+                    </div>
+                    <p className="text-xs text-red-400 mt-2 text-center">⚠ Переведите <b>{totalPrice}₽</b> по реквизитам выше, затем заполните форму.</p>
+                  </div>
+
+                  {/* Form */}
+                  <form id="payForm" onSubmit={handlePayment} className="space-y-4">
+                      <div>
+                        <label className="block text-xs text-slate-500 uppercase font-bold mb-1">Данные от аккаунта {isPlayStation ? '(PSN Email)' : '(Steam/Epic/Social)'}</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input required placeholder={isPlayStation ? "PSN Email" : "Логин"} className="bg-slate-800 border border-slate-600 rounded-lg p-3 text-white outline-none focus:border-white/50 accent-border" value={login} onChange={e=>setLogin(e.target.value)} />
+                          <input required type="password" placeholder="Пароль" className="bg-slate-800 border border-slate-600 rounded-lg p-3 text-white outline-none focus:border-white/50 accent-border" value={password} onChange={e=>setPassword(e.target.value)} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 uppercase font-bold mb-1">Куда писать о готовности?</label>
+                        <input required placeholder="Ссылка на VK или Telegram" className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white outline-none focus:border-white/50 accent-border" value={contacts} onChange={e=>setContacts(e.target.value)} />
+                      </div>
+                  </form>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="p-6 border-t border-slate-800 bg-slate-900 z-10">
+                   <button 
+                     form="payForm"
+                     disabled={isSubmitting}
+                     className="w-full accent-bg hover:brightness-110 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition flex items-center justify-center gap-2"
+                   >
+                     {isSubmitting ? <Icon name="loader" className="animate-spin" /> : "Я ОПЛАТИЛ, ОТПРАВИТЬ"}
+                   </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
